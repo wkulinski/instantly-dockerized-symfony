@@ -1,4 +1,4 @@
-# Instantly Dockerized Symfony Project
+# Instantly Dockerized Symfony 4 Project
 
 ## What's included
 With only few commands you instantly receive complete Symfony and Docker
@@ -13,11 +13,13 @@ environment with:
   - Portainer - for docker management
   - PgAdmin4 - for database management
   - Kibana - for logs management
+- Helpful developer commands
+  - To make work faster and simpler (read about **ins** command below) 
 
 ## How to access
 After successful installation you receive access to a few applications. 
 Assuming you haven't changed default ports during installation (of course you can!) you can find them here:
-- Your Symfony application: http://localhost:8090
+- Your Symfony 4 application: http://localhost:8090
 - Portainer: http://localhost:9000
 - PgAdmin: http://localhost:5050
 - Kibana: http://localhost:8091
@@ -43,8 +45,8 @@ ins create
 ```
 Just follow installation instructions.
 
-That's IT! You have brand new fully working Symfony project on 
-docker with all tools helful in developement.
+That's IT! You have brand new fully working Symfony 4 project on 
+docker with all tools helpful in development.
 
 ###### What is done with create command?
 Create command will:
@@ -94,7 +96,7 @@ Create command will:
 - compose postgres, nginx and php, and kibana images and create containers
 - store postgres data inside data/postgres/ folder (so you will not loose it by removing container. Keep in mind that this folder MUST be empty otherwise data won't be created.)
 
-## Developement
+## Development
 This project contains bunch of helpful commands and tools to make development 
 and deployment easier.
 
@@ -170,11 +172,14 @@ docker-compose exec db sh
 ```
 
 #### Build your project on rc or prod server
-Use command without any flag to build from **origin/develop** branch (for example on test or rc sever)
+**Keep in mind that build command is under development and might not work as expected!**  
+Use command without any flag to build from **origin/develop** branch (for example 
+on test or rc sever)
 ```
 ins build
 ```
-Use command with **--prod** flag to build from **origin/master** branch (for example prod sever)
+Use command with **--prod** flag to build from **origin/master** branch (for example 
+prod sever)
 ```
 ins build --prod
 ```

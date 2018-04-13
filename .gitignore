@@ -1,5 +1,5 @@
 /.env
 /data/
-!/data/postgres/.gitkeep
+!data/postgres/.gitkeep
 /bash/.install-lock
 /.idea
