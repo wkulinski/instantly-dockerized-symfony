@@ -41,7 +41,7 @@ while read -p 'Pleas enter your full name: ' name && [[ -z "$name" ]] ; do
     printf "Pleas type some value.\n"
 done
 
-./bash/install.sh "$email"
+./bash/install.sh "$@"
 
 echo "Clearing symfony folder..."
 sudo chown -R $USER:$USER symfony/*

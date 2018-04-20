@@ -8,10 +8,10 @@ elementIn () {
 }
 
 echo "Executing command..."
-scripts=(build create export install reload stop)
+scripts=(build create export install reload stop remove registry deploy cert)
 if elementIn "$1" "${scripts[@]}"; then
     echo "Executing ./bash/$1.sh"
-    eval "./bash/$1.sh"
+    eval "./bash/$1.sh ${@:2}"
 elif [ "$1" == "composer" ] || [ "$1" == "comp" ] || [ "$1" == "co" ]; then
     echo "Executing docker-compose exec php composer ${@:2}"
     docker-compose exec php composer "${@:2}"
