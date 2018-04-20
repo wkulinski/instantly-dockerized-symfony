@@ -2,6 +2,15 @@
 
 set -e
 
+prod=false
+input_email=""
+while getopts 'pe:' flag; do
+  case "${flag}" in
+    p) prod=true ;;
+    e) input_email="${OPTARG}" ;;
+  esac
+done
+
 if [ -f bash/.install-lock ]; then
     echo "Project is already created. If you are sure you want to install it again pleas remove lock file bash/.install-lock. Exiting."
     exit 0
@@ -10,11 +19,6 @@ fi
 echo "Starting installation of docker environment..."
 
 if [ ! -f .env ]; then
-#    read -p "Pleas enter Symfony environment (leave empty to use default dev): " symfony_environment
-#    if [ -z "$symfony_environment" ]; then
-#        symfony_environment="dev"
-#    fi
-
     read -p "Pleas enter Symfony application port (leave empty to use default 8090): " symfony_port
     if [ -z "$symfony_port" ]; then
         symfony_port="8090"
@@ -45,6 +49,30 @@ if [ ! -f .env ]; then
     if [ -z "$database_port" ]; then
         database_port="5432"
     fi
+
+#    if [ "$prod" = false ] ; then
+#        read -p "Pleas enter portainer port (leave empty to use default 9000): " portainer_port
+#        if [ -z "$portainer_port" ]; then
+#            portainer_port="9000"
+#        fi
+#
+#        read -p "Pleas enter pgadmin4 port (leave empty to use default 5050): " pgadmin_port
+#        if [ -z "$pgadmin_port" ]; then
+#            pgadmin_port="5050"
+#        fi
+#
+#        if [ -z "$input_email" ]; then
+#            while read -p 'Pleas enter your email: ' email && [[ -z "$email" ]] ; do
+#                printf "Pleas type some value.\n"
+#            done
+#        else
+#            email="$1"
+#        fi
+#
+#        while read -p 'Pleas enter pgadmin4 password: ' pgadmin_password && [[ -z "$pgadmin_password" ]] ; do
+#            printf "Pleas type some value.\n"
+#        done
+#    fi
 fi
 
 
@@ -61,7 +89,7 @@ else
     curl -fsSL get.docker.com -o get-docker.sh
     sudo sh get-docker.sh
 
-    rm get-docker.sh
+    rm -f get-docker.sh
 
     # Manage as non root
     # https://docs.docker.com/install/linux/linux-postinstall/#manage-docker-as-a-non-root-user
@@ -94,50 +122,50 @@ else
     echo "Docker compose installation finished."
 fi
 
+if [ "$prod" = false ] ; then
+    # Install Portainer
+    echo "Portainer installation..."
+    if [ ! "$(docker ps -a | grep portainer/portainer)" ]; then
+        read -p "Pleas enter portainer port (leave empty to use default 9000): " portainer_port
+        if [ -z "$portainer_port" ]; then
+            portainer_port="9000"
+        fi
 
-# Install Portainer
-echo "Portainer installation..."
-if [ ! "$(docker ps -a | grep portainer/portainer)" ]; then
-    read -p "Pleas enter portainer port (leave empty to use default 9000): " portainer_port
-    if [ -z "$portainer_port" ]; then
-        portainer_port="9000"
+        docker volume create portainer_data
+        docker run -d -p "$portainer_port":9000 --name portainer --restart always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer
+
+        echo "Portainer installation finished."
+    else
+        echo "Portainer is already installed. Skipping portainer installation."
     fi
 
-    docker volume create portainer_data
-    docker run -d -p "$portainer_port":9000 -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer
+    # Install pgadmin4
+    echo "Pgadmin4 installation..."
+    if [ ! "$(docker ps -a | grep dpage/pgadmin4)" ]; then
+        read -p "Pleas enter pgadmin4 port (leave empty to use default 5050): " pgadmin_port
+        if [ -z "$pgadmin_port" ]; then
+            pgadmin_port="5050"
+        fi
 
-    echo "Portainer installation finished."
-else
-    echo "Portainer is already installed. Skipping portainer installation."
-fi
+            if [ -z "$input_email" ]; then
+                while read -p 'Pleas enter your email: ' email && [[ -z "$email" ]] ; do
+                    printf "Pleas type some value.\n"
+                done
+            else
+                email="$input_email"
+            fi
 
-
-# Install pgadmin4
-echo "Pgadmin4 installation..."
-if [ ! "$(docker ps -a | grep dpage/pgadmin4)" ]; then
-    read -p "Pleas enter pgadmin4 port (leave empty to use default 5050): " pgadmin_port
-    if [ -z "$pgadmin_port" ]; then
-        pgadmin_port="5050"
-    fi
-
-    if [ -z "$1" ]; then
-        while read -p 'Pleas enter your email: ' email && [[ -z "$email" ]] ; do
+        while read -p 'Pleas enter pgadmin4 password: ' pgadmin_password && [[ -z "$pgadmin_password" ]] ; do
             printf "Pleas type some value.\n"
         done
+
+        docker pull dpage/pgadmin4
+        docker run -p "$pgadmin_port":80 --name pgadmin4 --restart always -e "PGADMIN_DEFAULT_EMAIL=$email" -e "PGADMIN_DEFAULT_PASSWORD=$pgadmin_password" -d dpage/pgadmin4
+
+        echo "Pgadmin4 installation finished."
     else
-        email="$1"
+        echo "Pgadmin4 is already installed. Skipping pgadmin4 installation."
     fi
-
-    while read -p 'Pleas enter pgadmin4 password: ' pgadmin_password && [[ -z "$pgadmin_password" ]] ; do
-        printf "Pleas type some value.\n"
-    done
-
-    docker pull dpage/pgadmin4
-    docker run -p "$pgadmin_port":80 -e "PGADMIN_DEFAULT_EMAIL=$email" -e "PGADMIN_DEFAULT_PASSWORD=$pgadmin_password" -d dpage/pgadmin4
-
-    echo "Pgadmin4 installation finished."
-else
-    echo "Pgadmin4 is already installed. Skipping pgadmin4 installation."
 fi
 
 # Create .env file
@@ -154,6 +182,11 @@ if [ ! -f .env ]; then
     echo "POSTGRES_DB=$database_name" >> .env
     echo "POSTGRES_PORT=$database_port" >> .env
 
+#    echo "PORTAINER_PORT=$portainer_port" >> .env
+#    echo "PGADMIN4_PORT=$pgadmin_port" >> .env
+#    echo "PGADMIN_DEFAULT_EMAIL=email" >> .env
+#    echo "PGADMIN_DEFAULT_PASSWORD=$pgadmin_password" >> .env
+
     echo ".env file created."
 else
     echo ".env file already exists. Skipping .env file creation."
@@ -163,9 +196,9 @@ fi
 touch bash/.install-lock
 #grep -q -F 'bash/.install-lock' .gitignore || echo 'bash/.install-lock' >> .gitignore
 
+sudo rm -f data/postgres/.gitkeep
+
 echo "Installation of docker environment completed."
 
-sudo rm data/postgres/.gitkeep
-
 # Start project containers
-./bash/reload.sh
+./bash/reload.sh "$@"

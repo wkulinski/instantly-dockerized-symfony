@@ -59,8 +59,8 @@ ADD symfony.pool.conf /etc/php7/php-fpm.d/
 RUN pecl install xdebug
 RUN docker-php-ext-enable xdebug
 RUN echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
-RUN echo "display_startup_errors = On" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
-RUN echo "display_errors = On" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+RUN echo "display_startup_errors = Off" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+RUN echo "display_errors = Off" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
 RUN echo "xdebug.remote_enable=1" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
 RUN echo "xdebug.remote_connect_back=1" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
 RUN echo "xdebug.idekey=\"PHPSTORM\"" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
@@ -73,5 +73,11 @@ RUN COMPOSER_ALLOW_SUPERUSER=1 composer --version
 CMD ["php-fpm7", "-F"]
 
 WORKDIR /var/www/symfony
+
+COPY --chown=www-data:www-data . .
+
+RUN rm -Rf var/cache/*
+RUN rm -Rf var/log/*
+
 EXPOSE 9000
 
