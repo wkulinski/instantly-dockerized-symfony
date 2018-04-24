@@ -3,11 +3,9 @@
 set -e
 
 prod=false
-input_email=""
 while getopts 'pe:' flag; do
   case "${flag}" in
     p) prod=true ;;
-    e) input_email="${OPTARG}" ;;
   esac
 done
 
@@ -16,65 +14,72 @@ if [ -f bash/.install-lock ]; then
     exit 0
 fi
 
-echo "Starting installation of docker environment..."
-
 if [ ! -f .env ]; then
-    read -p "Pleas enter Symfony application port (leave empty to use default 8090): " symfony_port
-    if [ -z "$symfony_port" ]; then
-        symfony_port="8090"
-    fi
-
-    read -p "Pleas enter Kibana application port (leave empty to use default 8091): " kibana_port
-    if [ -z "$kibana_port" ]; then
-        kibana_port="8091"
-    fi
-
-    while read -p 'Pleas enter your timezone: ' timezone && [[ -z "$timezone" ]] ; do
-        printf "Pleas type some value.\n"
-    done
-
-    while read -p 'Pleas enter new password for Symfony application database: ' database_password && [[ -z "$database_password" ]] ; do
-        printf "Pleas type some value.\n"
-    done
-
-    while read -p 'Pleas enter new username for Symfony application database: ' database_username && [[ -z "$database_username" ]] ; do
-        printf "Pleas type some value.\n"
-    done
-
-    while read -p 'Pleas enter new database name for Symfony application: ' database_name && [[ -z "$database_name" ]] ; do
-        printf "Pleas type some value.\n"
-    done
-
-    read -p "Pleas postgres port (leave empty to use default 5432): " database_port
-    if [ -z "$database_port" ]; then
-        database_port="5432"
-    fi
-
-#    if [ "$prod" = false ] ; then
-#        read -p "Pleas enter portainer port (leave empty to use default 9000): " portainer_port
-#        if [ -z "$portainer_port" ]; then
-#            portainer_port="9000"
-#        fi
-#
-#        read -p "Pleas enter pgadmin4 port (leave empty to use default 5050): " pgadmin_port
-#        if [ -z "$pgadmin_port" ]; then
-#            pgadmin_port="5050"
-#        fi
-#
-#        if [ -z "$input_email" ]; then
-#            while read -p 'Pleas enter your email: ' email && [[ -z "$email" ]] ; do
-#                printf "Pleas type some value.\n"
-#            done
-#        else
-#            email="$1"
-#        fi
-#
-#        while read -p 'Pleas enter pgadmin4 password: ' pgadmin_password && [[ -z "$pgadmin_password" ]] ; do
-#            printf "Pleas type some value.\n"
-#        done
-#    fi
+    echo "Creating .env file..."
+    touch .env
+else
+    echo "Loading .env file..."
+    . .env
 fi
 
+echo "Starting installation of docker environment..."
+
+if [ -z "$SYMFONY_APP_PATH" ] ; then
+    SYMFONY_APP_PATH=$(pwd)
+    echo "SYMFONY_APP_PATH=$SYMFONY_APP_PATH" >> .env
+fi
+
+if [ -z "$SYMFONY_APP_PORT" ] ; then
+    read -p "Pleas enter Symfony application port (leave empty to use default 8090): " SYMFONY_APP_PORT
+    if [ -z "$SYMFONY_APP_PORT" ]; then
+        SYMFONY_APP_PORT="8090"
+    fi
+    echo "SYMFONY_APP_PORT=$SYMFONY_APP_PORT" >> .env
+fi
+
+if [ -z "$KIBANA_PORT" ] ; then
+    read -p "Pleas enter Kibana application port (leave empty to use default 8091): " KIBANA_PORT
+    if [ -z "$KIBANA_PORT" ]; then
+        KIBANA_PORT="8091"
+    fi
+    echo "KIBANA_PORT=$KIBANA_PORT" >> .env
+fi
+
+if [ -z "$TIMEZONE" ] ; then
+    while read -p 'Pleas enter your timezone: ' TIMEZONE && [[ -z "$TIMEZONE" ]] ; do
+        printf "Pleas type some value.\n"
+    done
+    echo "TIMEZONE=$TIMEZONE" >> .env
+fi
+
+if [ -z "$POSTGRES_PASSWORD" ] ; then
+    while read -p 'Pleas enter new password for Symfony application database: ' POSTGRES_PASSWORD && [[ -z "$POSTGRES_PASSWORD" ]] ; do
+        printf "Pleas type some value.\n"
+    done
+    echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" >> .env
+fi
+
+if [ -z "$POSTGRES_USER" ] ; then
+    while read -p 'Pleas enter new username for Symfony application database: ' POSTGRES_USER && [[ -z "$POSTGRES_USER" ]] ; do
+        printf "Pleas type some value.\n"
+    done
+    echo "POSTGRES_USER=$POSTGRES_USER" >> .env
+fi
+
+if [ -z "$POSTGRES_DB" ] ; then
+    while read -p 'Pleas enter new database name for Symfony application: ' POSTGRES_DB && [[ -z "$POSTGRES_DB" ]] ; do
+        printf "Pleas type some value.\n"
+    done
+    echo "POSTGRES_DB=$POSTGRES_DB" >> .env
+fi
+
+if [ -z "$POSTGRES_PORT" ] ; then
+    read -p "Pleas postgres port (leave empty to use default 5432): " POSTGRES_PORT
+    if [ -z "$POSTGRES_PORT" ]; then
+        POSTGRES_PORT="5432"
+    fi
+    echo "POSTGRES_PORT=$POSTGRES_PORT" >> .env
+fi
 
 # Install docker
 echo "Docker installation..."
@@ -93,8 +98,12 @@ else
 
     # Manage as non root
     # https://docs.docker.com/install/linux/linux-postinstall/#manage-docker-as-a-non-root-user
-    sudo groupadd docker
+    [ $(getent group docker) ] || sudo groupadd docker
     sudo usermod -aG docker $USER
+
+    # Refresh current user groups to prevent need of log out
+    # https://superuser.com/questions/272061/reload-a-linux-users-group-assignments-without-logging-out
+    exec sg docker newgrp `id -gn`
 
     # Enable docker autostart
     # https://docs.docker.com/install/linux/linux-postinstall/#configure-docker-to-start-on-boot
@@ -126,13 +135,19 @@ if [ "$prod" = false ] ; then
     # Install Portainer
     echo "Portainer installation..."
     if [ ! "$(docker ps -a | grep portainer/portainer)" ]; then
-        read -p "Pleas enter portainer port (leave empty to use default 9000): " portainer_port
-        if [ -z "$portainer_port" ]; then
-            portainer_port="9000"
+
+        if [ -z "$PORTAINER_PORT" ] ; then
+            read -p "Pleas enter portainer port (leave empty to use default 9000): " PORTAINER_PORT
+            if [ -z "$PORTAINER_PORT" ]; then
+                PORTAINER_PORT="9000"
+            fi
+            echo "PORTAINER_PORT=$PORTAINER_PORT" >> .env
         fi
 
-        docker volume create portainer_data
-        docker run -d -p "$portainer_port":9000 --name portainer --restart always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer
+        ./bash/manage.sh -a reload -c portainer
+
+#        docker volume create portainer_data
+#        docker run -d -p "$portainer_port":9000 --name portainer --restart always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer
 
         echo "Portainer installation finished."
     else
@@ -142,25 +157,32 @@ if [ "$prod" = false ] ; then
     # Install pgadmin4
     echo "Pgadmin4 installation..."
     if [ ! "$(docker ps -a | grep dpage/pgadmin4)" ]; then
-        read -p "Pleas enter pgadmin4 port (leave empty to use default 5050): " pgadmin_port
-        if [ -z "$pgadmin_port" ]; then
-            pgadmin_port="5050"
+
+        if [ -z "$PGADMIN4_PORT" ] ; then
+            read -p "Pleas enter pgadmin4 port (leave empty to use default 5050): " PGADMIN4_PORT
+            if [ -z "$PGADMIN4_PORT" ]; then
+                PGADMIN4_PORT="5050"
+            fi
+            echo "PGADMIN4_PORT=$PGADMIN4_PORT" >> .env
         fi
 
-            if [ -z "$input_email" ]; then
-                while read -p 'Pleas enter your email: ' email && [[ -z "$email" ]] ; do
-                    printf "Pleas type some value.\n"
-                done
-            else
-                email="$input_email"
-            fi
+        if [ -z "$PGADMIN_DEFAULT_EMAIL" ]; then
+            while read -p 'Pleas enter your email: ' PGADMIN_DEFAULT_EMAIL && [[ -z "$PGADMIN_DEFAULT_EMAIL" ]] ; do
+                printf "Pleas type some value.\n"
+            done
+            echo "PGADMIN_DEFAULT_EMAIL=$PGADMIN_DEFAULT_EMAIL" >> .env
+        fi
 
-        while read -p 'Pleas enter pgadmin4 password: ' pgadmin_password && [[ -z "$pgadmin_password" ]] ; do
-            printf "Pleas type some value.\n"
-        done
+        if [ -z "$PGADMIN_DEFAULT_PASSWORD" ]; then
+            while read -p 'Pleas enter pgadmin4 password: ' PGADMIN_DEFAULT_PASSWORD && [[ -z "$PGADMIN_DEFAULT_PASSWORD" ]] ; do
+                printf "Pleas type some value.\n"
+            done
+            echo "PGADMIN_DEFAULT_PASSWORD=$PGADMIN_DEFAULT_PASSWORD" >> .env
+        fi
 
-        docker pull dpage/pgadmin4
-        docker run -p "$pgadmin_port":80 --name pgadmin4 --restart always -e "PGADMIN_DEFAULT_EMAIL=$email" -e "PGADMIN_DEFAULT_PASSWORD=$pgadmin_password" -d dpage/pgadmin4
+        ./bash/manage.sh -a reload -c pgadmin4
+#        docker pull dpage/pgadmin4
+#        docker run -p "$pgadmin_port":80 --name pgadmin4 --restart always -e "PGADMIN_DEFAULT_EMAIL=$email" -e "PGADMIN_DEFAULT_PASSWORD=$pgadmin_password" -d dpage/pgadmin4
 
         echo "Pgadmin4 installation finished."
     else
@@ -168,37 +190,16 @@ if [ "$prod" = false ] ; then
     fi
 fi
 
-# Create .env file
-echo "Creating .env file..."
-if [ ! -f .env ]; then
-    currentdir=$(pwd)
-    touch .env
-    echo "SYMFONY_APP_PATH=$currentdir" >> .env
-    echo "SYMFONY_APP_PORT=$symfony_port" >> .env
-    echo "KIBANA_PORT=$kibana_port" >> .env
-    echo "TIMEZONE=$timezone" >> .env
-    echo "POSTGRES_PASSWORD=$database_password" >> .env
-    echo "POSTGRES_USER=$database_username" >> .env
-    echo "POSTGRES_DB=$database_name" >> .env
-    echo "POSTGRES_PORT=$database_port" >> .env
-
-#    echo "PORTAINER_PORT=$portainer_port" >> .env
-#    echo "PGADMIN4_PORT=$pgadmin_port" >> .env
-#    echo "PGADMIN_DEFAULT_EMAIL=email" >> .env
-#    echo "PGADMIN_DEFAULT_PASSWORD=$pgadmin_password" >> .env
-
-    echo ".env file created."
-else
-    echo ".env file already exists. Skipping .env file creation."
-fi
-
 # Create local install lock
 touch bash/.install-lock
-#grep -q -F 'bash/.install-lock' .gitignore || echo 'bash/.install-lock' >> .gitignore
 
 sudo rm -f data/postgres/.gitkeep
 
 echo "Installation of docker environment completed."
 
 # Start project containers
-./bash/reload.sh "$@"
+if [ "$prod" = false ] ; then
+    ./bash/manage.sh -a reload -c dev
+else
+    ./bash/manage.sh -a reload -c deploy
+fi

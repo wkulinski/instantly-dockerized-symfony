@@ -1,0 +1,15 @@
+version: '2.3'
+
+services:
+    docker-registry-ui:
+        container_name: docker-registry-ui
+        image: konradkleine/docker-registry-frontend:v2
+        restart: always
+        ports:
+            - ${DOCKER_REGISTRY_UI_PORT}:80
+        environment:
+            ENV_DOCKER_REGISTRY_HOST: ${DOCKER_REGISTRY_IP_UI}
+            ENV_DOCKER_REGISTRY_PORT: ${DOCKER_REGISTRY_PORT}
+            ENV_DOCKER_REGISTRY_USE_SSL: 1
+volumes:
+    docker_registry_data: {}

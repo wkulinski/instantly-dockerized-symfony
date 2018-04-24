@@ -7,27 +7,52 @@ elementIn () {
     return 1
 }
 
+project_name="${PWD##*/}-app"
 echo "Executing command..."
-scripts=(build create export install reload stop remove registry deploy cert)
+scripts=(build cert create deploy export install manage registry)
 if elementIn "$1" "${scripts[@]}"; then
     echo "Executing ./bash/$1.sh"
     eval "./bash/$1.sh ${@:2}"
 elif [ "$1" == "composer" ] || [ "$1" == "comp" ] || [ "$1" == "co" ]; then
     echo "Executing docker-compose exec php composer ${@:2}"
-    docker-compose exec php composer "${@:2}"
+    docker-compose \
+        -p "$project_name" \
+        -f docker-compose.yml \
+        -f ./compose/docker-compose.dev.yml \
+        exec php composer "${@:2}"
 elif [ "$1" == "console" ] || [ "$1" == "symfony" ] || [ "$1" == "sf" ]; then
     echo "Executing docker-compose exec php php bin/console ${@:2}"
-    docker-compose exec php php bin/console "${@:2}"
+    docker-compose \
+        -p "$project_name" \
+        -f docker-compose.yml \
+        -f ./compose/docker-compose.dev.yml \
+        exec php php bin/console "${@:2}"
 elif [ "$1" == "app" ] || [ "$1" == "php" ]; then
     echo "Moving to php container shell."
-    docker-compose exec php sh
+    docker-compose \
+        -p "$project_name" \
+        -f docker-compose.yml \
+        -f ./compose/docker-compose.dev.yml \
+        exec php sh
 elif [ "$1" == "nginx" ] || [ "$1" == "server" ]; then
     echo "Moving to nginx container shell."
-    docker-compose exec nginx sh
+    docker-compose \
+        -p "$project_name" \
+        -f docker-compose.yml \
+        -f ./compose/docker-compose.dev.yml \
+        exec nginx sh
 elif [ "$1" == "postgres" ] || [ "$1" == "db" ]; then
     echo "Moving to postgres container shell."
-    docker-compose exec db sh
+    docker-compose \
+        -p "$project_name" \
+        -f docker-compose.yml \
+        -f ./compose/docker-compose.dev.yml \
+        exec db sh
 else
     echo "Executing docker-compose exec $@"
-    docker-compose exec "$@"
+    docker-compose \
+        -p "$project_name" \
+        -f docker-compose.yml \
+        -f ./compose/docker-compose.dev.yml \
+        exec "$@"
 fi

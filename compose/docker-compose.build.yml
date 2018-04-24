@@ -1,0 +1,30 @@
+version: '2.3'
+
+services:
+    app:
+        build:
+            context: docker/build
+            args:
+                TIMEZONE: ${TIMEZONE}
+        image: ${DOCKER_REGISTRY_PATH}:${DOCKER_REGISTRY_PORT}/app:${APPLICATION_VERSION:-dev}
+        restart: always
+        ports:
+            - 9001:9000
+        links:
+            - db
+        volumes:
+            - ${SYMFONY_APP_PATH}/symfony:/var/www/symfony
+            - ./symfony/var/logs:/var/www/symfony/var/logs
+            - ./symfony/var/cache:/var/www/symfony/var/cache
+    nginx:
+        build: docker/nginx
+        image: ${DOCKER_REGISTRY_PATH}:${DOCKER_REGISTRY_PORT}/nginx:${APPLICATION_VERSION:-dev}
+        restart: always
+        ports:
+            - ${SYMFONY_APP_PORT}:80
+        links:
+            - app
+        volumes_from:
+            - app
+        volumes:
+            - ./symfony/var/serverlogs:/var/log/nginx
