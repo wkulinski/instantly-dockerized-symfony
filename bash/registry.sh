@@ -6,25 +6,46 @@ set -e
 if [ "$1" == "install" ]; then
     echo "Docker registry installation..."
     if [ ! "$(docker ps -a | grep -w 'docker-registry-repo')" ]; then
-        read -p "Pleas enter docker registry port (leave empty to use default 5000): " docker_registry_port
-        if [ -z "$docker_registry_port" ]; then
-            docker_registry_port="5000"
+        if [ ! -f .env ]; then
+            echo "Creating .env file..."
+            touch .env
+        else
+            echo "Loading .env file..."
+            . .env
         fi
 
-        while read -p 'Pleas enter registry username: ' registry_username && [[ -z "$registry_username" ]] ; do
-            printf "Pleas type some value.\n"
-        done
+        if [ -z "$DOCKER_REGISTRY_PORT" ] ; then
+            read -p "Pleas enter docker registry port (leave empty to use default 5000): " DOCKER_REGISTRY_PORT
+            if [ -z "$DOCKER_REGISTRY_PORT" ]; then
+                DOCKER_REGISTRY_PORT="5000"
+            fi
+            echo "DOCKER_REGISTRY_PORT=$DOCKER_REGISTRY_PORT" >> .env
+        fi
 
-        while read -p 'Pleas enter registry password: ' registry_password && [[ -z "$registry_password" ]] ; do
-            printf "Pleas type some value.\n"
-        done
+        if [ -z "$DOCKER_REGISTRY_PATH" ] ; then
+            while read -p 'Pleas enter registry domain/path (ie. localhost): ' DOCKER_REGISTRY_PATH && [[ -z "$DOCKER_REGISTRY_PATH" ]] ; do
+                printf "Pleas type some value.\n"
+            done
+            echo "DOCKER_REGISTRY_PATH=$DOCKER_REGISTRY_PATH" >> .env
+        fi
 
-        while read -p 'Pleas enter registry domain: ' registry_domain && [[ -z "$registry_domain" ]] ; do
-            printf "Pleas type some value.\n"
-        done
+        if [ -z "$DOCKER_REGISTRY_USERNAME" ] ; then
+            while read -p 'Pleas enter registry username: ' DOCKER_REGISTRY_USERNAME && [[ -z "$DOCKER_REGISTRY_USERNAME" ]] ; do
+                printf "Pleas type some value.\n"
+            done
+            echo "DOCKER_REGISTRY_USERNAME=$DOCKER_REGISTRY_USERNAME" >> .env
+        fi
+
+        if [ -z "$DOCKER_REGISTRY_PASSWORD" ] ; then
+            while read -p 'Pleas enter registry password: ' DOCKER_REGISTRY_PASSWORD && [[ -z "$DOCKER_REGISTRY_PASSWORD" ]] ; do
+                printf "Pleas type some value.\n"
+            done
+            echo "DOCKER_REGISTRY_PASSWORD=$DOCKER_REGISTRY_PASSWORD" >> .env
+        fi
 
         echo "Checking certificates..."
-        if [ -f `pwd`"/data/cert/$registry_domain.crt" ] || [ -f `pwd`"/data/cert/$registry_domain.key" ]; then
+        registry_domain="$DOCKER_REGISTRY_PATH:$DOCKER_REGISTRY_PORT"
+        if [ ! -f `pwd`"/data/cert/$registry_domain.crt" ] || [ ! -f `pwd`"/data/cert/$registry_domain.key" ]; then
             echo "Missing certificate data/cert/$registry_domain.crt, data/cert/$registry_domain.key..."
             ./bash/cert.sh -d "$registry_domain"
         else
@@ -32,25 +53,9 @@ if [ "$1" == "install" ]; then
         fi
 
         mkdir -p data/auth
-        docker run --entrypoint htpasswd registry:2 -Bbn "$registry_username" "$registry_password" > data/auth/htpasswd
+        docker run --entrypoint htpasswd registry:2 -Bbn "$DOCKER_REGISTRY_USERNAME" "$DOCKER_REGISTRY_PASSWORD" > data/auth/htpasswd
 
-        docker volume create docker_registry_data
-#        docker run -d -p "$docker_registry_port":5000 -v docker_registry_data:/var/lib/registry -v data/auth:/auth -e "SEARCH_BACKEND=true" --restart always --name docker-registry-repo registry:2
-
-        docker run -d \
-            -p "$docker_registry_port":5000 \
-            --restart=always \
-            --name docker-registry-repo \
-            -v docker_registry_data:/var/lib/registry \
-            -e "SEARCH_BACKEND=true" \
-            -v `pwd`/data/auth:/auth \
-            -e "REGISTRY_AUTH=htpasswd" \
-            -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm" \
-            -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd \
-            -v `pwd`/data/cert:/certs \
-            -e "REGISTRY_HTTP_TLS_CERTIFICATE=/certs/$registry_domain.crt" \
-            -e "REGISTRY_HTTP_TLS_KEY=/certs/$registry_domain.key" \
-            registry:2
+        ./bash/manage.sh -a reload -c registry
 
         echo "Docker registry installation done."
     else
@@ -60,70 +65,66 @@ elif [ "$1" == "install-ui" ]; then
     # https://hub.docker.com/r/konradkleine/docker-registry-frontend/
     echo "Docker registry user interface installation..."
     if [ ! "$(docker ps -a | grep docker-registry-ui)" ]; then
-        read -p "Pleas enter docker registry user interface port (leave empty to use default 5001): " docker_registry_ui_port
-        if [ -z "$docker_registry_ui_port" ]; then
-            docker_registry_ui_port="5001"
-        fi
-
-        registryip=""
-        if [ "$(docker ps -a | grep -w 'docker-registry-repo')" ]; then
-            registryip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' docker-registry-repo)"
-
-            read -p "Pleas enter docker registry address (leave empty to use $registryip): " registryipcustom
-            if [ -z "$registryipcustom" ]; then
-                echo "Using $registryip"
-            else
-                registryip="$registryipcustom"
-            fi
+        if [ ! -f .env ]; then
+            echo "Creating .env file..."
+            touch .env
         else
-            while read -p 'Pleas enter docker registry address: ' registryip && [[ -z "$registryip" ]] ; do
-                printf "Pleas type some value.\n"
-            done
+            echo "Loading .env file..."
+            . .env
         fi
 
-        registryport=""
-        if [ "$(docker ps -a | grep -w 'docker-registry-repo')" ]; then
-            registryport="$(docker inspect -f '{{range $p, $conf := .NetworkSettings.Ports}}{{(index $conf 0).HostPort}}{{end}}' docker-registry-repo)"
-
-            read -p "Pleas enter docker registry port (leave empty to use $registryport): " registryportcustom
-            if [ -z "$registryportcustom" ]; then
-                echo "Using $registryport"
-            else
-                registryport="$registryportcustom"
+        if [ -z "$DOCKER_REGISTRY_UI_PORT" ] ; then
+            read -p "Pleas enter docker registry user interface port (leave empty to use default 5001): " DOCKER_REGISTRY_UI_PORT
+            if [ -z "$DOCKER_REGISTRY_UI_PORT" ]; then
+                DOCKER_REGISTRY_UI_PORT="5001"
             fi
-        else
-            while read -p 'Pleas enter docker registry address: ' registryport && [[ -z "$registryport" ]] ; do
-                printf "Pleas type some value.\n"
-            done
+            echo "DOCKER_REGISTRY_UI_PORT=$DOCKER_REGISTRY_UI_PORT" >> .env
         fi
 
-        docker run -d --restart always --name docker-registry-ui \
-        -e "ENV_DOCKER_REGISTRY_HOST=$registryip" \
-        -e "ENV_DOCKER_REGISTRY_PORT=$registryport" \
-        -e ENV_DOCKER_REGISTRY_USE_SSL=1 \
-        -p "$docker_registry_ui_port":80 \
-        konradkleine/docker-registry-frontend:v2
+        if [ -z "$DOCKER_REGISTRY_PORT" ] ; then
+            registry_port=""
+            if [ "$(docker ps -a | grep -w 'docker-registry-repo')" ]; then
+                registry_port="$(docker inspect -f '{{range $p, $conf := .NetworkSettings.Ports}}{{(index $conf 0).HostPort}}{{end}}' docker-registry-repo)"
 
-#        docker run -d -p "$docker_registry_ui_port":8080 -e "REG1=http://$registryip/v2/" --restart always --name docker-registry-ui atcol/docker-registry-ui
+                read -p "Pleas enter docker registry port (leave empty to use $registry_port): " registry_port_custom
+                if [ -z "$registry_port_custom" ]; then
+                    echo "Using $registry_port"
+                else
+                    registry_port="$registry_port_custom"
+                fi
+            else
+                while read -p 'Pleas enter docker registry address: ' registry_port && [[ -z "$registry_port" ]] ; do
+                    printf "Pleas type some value.\n"
+                done
+            fi
+            DOCKER_REGISTRY_PORT="$registry_port"
+            echo "DOCKER_REGISTRY_PORT=$registry_port" >> .env
+        fi
+
+        if [ -z "$DOCKER_REGISTRY_IP_UI" ] ; then
+            registry_path=""
+            if [ "$(docker ps -a | grep -w 'docker-registry-repo')" ]; then
+                registry_path="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.Gateway}}{{end}}' docker-registry-repo)"
+
+                read -p "Pleas enter docker registry domain/path (leave empty to use detected registry gateway $registry_path - note that localhost probably will not work): " registry_path_custom
+                if [ -z "$registry_path_custom" ]; then
+                    echo "Using $registry_path"
+                else
+                    registry_path="$registry_path_custom"
+                fi
+            else
+                while read -p "Pleas enter docker registry domain/path (note that localhost probably will not work): " registry_path && [[ -z "$registry_path" ]] ; do
+                    printf "Pleas type some value.\n"
+                done
+            fi
+            DOCKER_REGISTRY_IP_UI="$registry_path"
+            echo "DOCKER_REGISTRY_IP_UI=$registry_path" >> .env
+        fi
+
+        ./bash/manage.sh -a reload -c registry-ui
     else
         echo "Docker registry user interface is already installed. Skipping Docker registry user interface installation."
     fi
-elif [ "$1" == "stop" ]; then
-    echo "Stopping docker registry..."
-    docker container stop docker-registry-repo
-    echo "Done."
-elif [ "$1" == "stop-ui" ]; then
-    echo "Stopping docker registry user interface..."
-    docker container stop docker-registry-ui
-    echo "Done."
-elif [ "$1" == "remove" ]; then
-    echo "Removing docker registry..."
-    docker container stop docker-registry-repo && docker container rm -v docker-registry-repo
-    echo "Done."
-elif [ "$1" == "remove-ui" ]; then
-    echo "Removing docker registry user interface..."
-    docker container stop docker-registry-ui && docker container rm -v docker-registry-ui
-    echo "Done."
 else
     echo "Pleas define action."
 fi

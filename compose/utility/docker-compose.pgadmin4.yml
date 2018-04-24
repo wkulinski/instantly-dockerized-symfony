@@ -1,0 +1,12 @@
+version: '2.3'
+
+services:
+    pgadmin4:
+        container_name: pgadmin4
+        image: dpage/pgadmin4
+        restart: always
+        ports:
+            - ${PGADMIN4_PORT}:80
+        environment:
+            PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+            PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}

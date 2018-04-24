@@ -2,15 +2,17 @@
 
 set -e
 
-prod=false
+./bash/hook/pre-deploy.sh "$@"
+
 version=""
 while getopts 'pv:' flag; do
     case "${flag}" in
-        p) prod=true ;;
         v) version="${OPTARG}" ;;
     esac
 done
 
 #docker stack deploy live --compose-file=docker-compose.live.yml
 
-docker deploy build/artifact
+#docker deploy build/artifact
+
+./bash/hook/post-deploy.sh "$@"

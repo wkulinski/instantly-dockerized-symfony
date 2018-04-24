@@ -33,11 +33,11 @@ if [ -z "$distribution" ]; then
     exit 1
 fi
 
-while read -p 'Pleas enter your email: ' email && [[ -z "$email" ]] ; do
+while read -p 'Pleas enter your email (for local git config): ' email && [[ -z "$email" ]] ; do
     printf "Pleas type some value.\n"
 done
 
-while read -p 'Pleas enter your full name: ' name && [[ -z "$name" ]] ; do
+while read -p 'Pleas enter your full name (for local git config): ' name && [[ -z "$name" ]] ; do
     printf "Pleas type some value.\n"
 done
 
@@ -48,17 +48,17 @@ sudo chown -R $USER:$USER symfony/*
 rm -Rf symfony/*
 rm -Rf symfony/.gitkeep
 
+project_name="${PWD##*/}-app"
 echo "Creating Symfony project..."
 # Create symfony project
-COMPOSER_ALLOW_SUPERUSER=1 docker-compose exec php composer create-project "$distribution" .
+COMPOSER_ALLOW_SUPERUSER=1 docker-compose -p "$project_name" -f docker-compose.yml -f ./compose/docker-compose.dev.yml exec php composer create-project "$distribution" .
 
 # Require security checker
-COMPOSER_ALLOW_SUPERUSER=1 docker-compose exec php composer require sec-checker --dev
+COMPOSER_ALLOW_SUPERUSER=1 docker-compose -p "$project_name" -f docker-compose.yml -f ./compose/docker-compose.dev.yml exec php composer require sec-checker --dev
 
 sudo chown -R $USER:$USER symfony/*
 
 echo "Creating git repository..."
-# Initiate git repository
 git init
 
 # Set name and email

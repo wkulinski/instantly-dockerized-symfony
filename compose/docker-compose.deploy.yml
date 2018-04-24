@@ -13,7 +13,7 @@ services:
         volumes:
           - ./data/postgres:/var/lib/postgresql/data
     app:
-        image: ${PRIVATE_DOCKER_REGISTRY_PATH}:${APPLICATION_VERSION:-dev}
+        image: ${DOCKER_REGISTRY_PATH}:${DOCKER_REGISTRY_PORT}:${APPLICATION_VERSION:-dev}
         restart: always
         ports:
             - 9001:9000
@@ -23,7 +23,7 @@ services:
             - ./symfony/var/logs:/var/www/symfony/var/logs
             - ./symfony/var/cache:/var/www/symfony/var/cache
     nginx:
-        image: ${PRIVATE_DOCKER_REGISTRY_PATH}:${APPLICATION_VERSION:-dev}
+        image: ${DOCKER_REGISTRY_PATH}:${DOCKER_REGISTRY_PORT}:${APPLICATION_VERSION:-dev}
         restart: always
         ports:
             - ${SYMFONY_APP_PORT}:80

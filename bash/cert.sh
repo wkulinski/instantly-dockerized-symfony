@@ -6,11 +6,9 @@ mkdir -p data/cert
 
 echo "Creating new certificate..."
 
-#email=""
 domain=""
 while getopts 'd:' flag; do
   case "${flag}" in
-#    e) email="${OPTARG}" ;;
     d) domain="${OPTARG}" ;;
   esac
 done
@@ -44,30 +42,3 @@ if [ "$release" == "ubuntu" ] ; then
 fi
 
 echo "Certificate created in data/cert/"
-
-#
-#if [ -z "$email" ]; then
-#    while read -p 'Pleas enter email: ' email && [[ -z "$email" ]] ; do
-#        printf "Pleas type some value.\n"
-#    done
-#fi
-#
-#if [ -z "$domain" ]; then
-#    while read -p 'Pleas enter domain: ' domain && [[ -z "$domain" ]] ; do
-#        printf "Pleas type some value.\n"
-#    done
-#fi
-
-#To fix these errors, please make sure that your domain name was
-#entered correctly and the DNS A/AAAA record(s) for that domain
-#contain(s) the right IP address.
-
-#docker run -it --rm --name certbot \
-#    -v `pwd`/data/letsencrypt/cert:/etc/letsencrypt \
-#    -v `pwd`/data/letsencrypt/lib:/var/lib/letsencrypt \
-#    certbot/certbot certonly \
-#    --standalone \
-#    --email "$email" \
-#    -d "$domain"
-#
-#echo "CA certificate installed in data/letsencrypt/cert/live"

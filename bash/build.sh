@@ -9,36 +9,50 @@ fi
 
 ./bash/hook/pre-build.sh "$@"
 
-#cd symfony/
-
 prod=false
 version=""
-fetch=true
+fetch=false
 while getopts 'pv:n' flag; do
     case "${flag}" in
         p) prod=true ;;
         v) version="${OPTARG}" ;;
-        n) fetch=false ;;
+        f) fetch=true ;;
     esac
 done
+
+. .env
+
+if [ -z "$PRIVATE_DOCKER_REGISTRY_PATH" ] ; then
+    while read -p 'Pleas enter registry path: ' PRIVATE_DOCKER_REGISTRY_PATH && [[ -z "$PRIVATE_DOCKER_REGISTRY_PATH" ]] ; do
+        printf "Pleas type some value.\n"
+    done
+
+    echo "Updating .env file..."
+    echo "PRIVATE_DOCKER_REGISTRY_PATH=$PRIVATE_DOCKER_REGISTRY_PATH" >> .env
+    echo ".env file updated."
+fi
+
+echo "Preparing build and push to $PRIVATE_DOCKER_REGISTRY_PATH"
+
+if [ -z "$version" ] ; then
+    if [ "$prod" = false ] ; then
+        version="dev"
+    else
+        while read -p 'Pleas enter version number: ' version && [[ -z "$version" ]] ; do
+            printf "Pleas type some value.\n"
+        done
+    fi
+fi
 
 if [ "$fetch" == true ] ; then
     echo "Fetching remote repository..."
     git fetch
 
     if [ "$prod" = false ] ; then
-        version="dev"
-
         echo "Checking out to developement environment..."
         git checkout develop
         git reset --hard origin/develop
     else
-        if [ -z "$version" ]; then
-            while read -p 'Pleas enter version number: ' version && [[ -z "$version" ]] ; do
-                printf "Pleas type some value.\n"
-            done
-        fi
-
         echo "Checking out to production environment..."
         git checkout master
         git reset --hard origin/master
@@ -46,68 +60,47 @@ if [ "$fetch" == true ] ; then
     echo "Done."
 fi
 
-#echo "Updating .env file..."
-#if grep -Fxq "APPLICATION_VERSION=" .env
-#then
-#    sed -i "s/APPLICATION_VERSION=.*/APPLICATION_VERSION=$version/" .env
-#else
-#    echo "APPLICATION_VERSION=$version" >> .env
-#fi
-#echo ".env file updated."
-
 echo "Removing cache..."
 rm -Rf symfony/var/cache/*
 echo "Cache removed."
 
-#cd ../
+project_name="${PWD##*/}-build"
 
 echo "Building images..."
-APPLICATION_VERSION="$version" docker-compose -f docker-compose.build.yml build
+APPLICATION_VERSION="$version" docker-compose \
+    -p "$project_name" \
+    -f docker-compose.yml \
+    -f ./compose/docker-compose.build.yml \
+    build
 echo "Images build finished."
 
 echo "Installing vendors..."
-COMPOSER_ALLOW_SUPERUSER=1 docker-compose -f docker-compose.build.yml run --rm app composer install --no-interaction --classmap-authoritative --optimize-autoloader
-#chown -R www-data:www-data .
+COMPOSER_ALLOW_SUPERUSER=1 docker-compose \
+    -p "$project_name" \
+    -f docker-compose.yml \
+    -f ./compose/docker-compose.build.yml \
+    run --rm app composer install --no-interaction --classmap-authoritative --optimize-autoloader
 echo "Vendors installed."
 
-echo "Building app image..."
-APPLICATION_VERSION="$version" docker-compose -f docker-compose.build.yml build app
+echo "Re-building app image..."
+APPLICATION_VERSION="$version" docker-compose \
+    -p "$project_name" \
+    -f docker-compose.build.yml \
+    -f ./compose/docker-compose.build.yml \
+    build app
 echo "App image build finished."
-
-source .env
-
-if [ -z "$PRIVATE_DOCKER_REGISTRY_PATH" ] ; then
-    while read -p 'Pleas enter registry path: ' registry_path && [[ -z "$registry_path" ]] ; do
-        printf "Pleas type some value.\n"
-    done
-
-    echo "Updating .env file..."
-    if grep -Fxq "PRIVATE_DOCKER_REGISTRY_PATH=" .env
-    then
-        sed -i "s/PRIVATE_DOCKER_REGISTRY_PATH=.*/PRIVATE_DOCKER_REGISTRY_PATH=$registry_path/" .env
-    else
-        echo "PRIVATE_DOCKER_REGISTRY_PATH=$registry_path" >> .env
-    fi
-    echo ".env file updated."
-
-    PRIVATE_DOCKER_REGISTRY_PATH="$registry_path"
-fi
 
 echo "Login to $PRIVATE_DOCKER_REGISTRY_PATH registry path."
 docker login "$PRIVATE_DOCKER_REGISTRY_PATH"
 
 echo "Pushing to registry..."
-APPLICATION_VERSION="$version" docker-compose -f docker-compose.build.yml push
+APPLICATION_VERSION="$version" docker-compose \
+    -p "$project_name" \
+    -f docker-compose.build.yml \
+    -f ./compose/docker-compose.build.yml \
+    push
 echo "Push finished."
-
-#APPLICATION_VERSION="$version" docker-compose -f docker-compose.build.yml bundle -o build/artifact.dab
-
-#echo "Cleaning builds..."
-#docker-compose -f docker-compose.build.yml down --rmi all
 
 echo "Build finished."
 
-
-#./bash/reload.sh "$@"
-
-#./bash/hook/post-build.sh "$@"
+./bash/hook/post-build.sh "$@"
