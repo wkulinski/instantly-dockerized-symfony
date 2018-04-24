@@ -131,65 +131,6 @@ else
     echo "Docker compose installation finished."
 fi
 
-if [ "$prod" = false ] ; then
-    # Install Portainer
-    echo "Portainer installation..."
-    if [ ! "$(docker ps -a | grep portainer/portainer)" ]; then
-
-        if [ -z "$PORTAINER_PORT" ] ; then
-            read -p "Pleas enter portainer port (leave empty to use default 9000): " PORTAINER_PORT
-            if [ -z "$PORTAINER_PORT" ]; then
-                PORTAINER_PORT="9000"
-            fi
-            echo "PORTAINER_PORT=$PORTAINER_PORT" >> .env
-        fi
-
-        ./bash/manage.sh -a reload -c portainer
-
-#        docker volume create portainer_data
-#        docker run -d -p "$portainer_port":9000 --name portainer --restart always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer
-
-        echo "Portainer installation finished."
-    else
-        echo "Portainer is already installed. Skipping portainer installation."
-    fi
-
-    # Install pgadmin4
-    echo "Pgadmin4 installation..."
-    if [ ! "$(docker ps -a | grep dpage/pgadmin4)" ]; then
-
-        if [ -z "$PGADMIN4_PORT" ] ; then
-            read -p "Pleas enter pgadmin4 port (leave empty to use default 5050): " PGADMIN4_PORT
-            if [ -z "$PGADMIN4_PORT" ]; then
-                PGADMIN4_PORT="5050"
-            fi
-            echo "PGADMIN4_PORT=$PGADMIN4_PORT" >> .env
-        fi
-
-        if [ -z "$PGADMIN_DEFAULT_EMAIL" ]; then
-            while read -p 'Pleas enter your email: ' PGADMIN_DEFAULT_EMAIL && [[ -z "$PGADMIN_DEFAULT_EMAIL" ]] ; do
-                printf "Pleas type some value.\n"
-            done
-            echo "PGADMIN_DEFAULT_EMAIL=$PGADMIN_DEFAULT_EMAIL" >> .env
-        fi
-
-        if [ -z "$PGADMIN_DEFAULT_PASSWORD" ]; then
-            while read -p 'Pleas enter pgadmin4 password: ' PGADMIN_DEFAULT_PASSWORD && [[ -z "$PGADMIN_DEFAULT_PASSWORD" ]] ; do
-                printf "Pleas type some value.\n"
-            done
-            echo "PGADMIN_DEFAULT_PASSWORD=$PGADMIN_DEFAULT_PASSWORD" >> .env
-        fi
-
-        ./bash/manage.sh -a reload -c pgadmin4
-#        docker pull dpage/pgadmin4
-#        docker run -p "$pgadmin_port":80 --name pgadmin4 --restart always -e "PGADMIN_DEFAULT_EMAIL=$email" -e "PGADMIN_DEFAULT_PASSWORD=$pgadmin_password" -d dpage/pgadmin4
-
-        echo "Pgadmin4 installation finished."
-    else
-        echo "Pgadmin4 is already installed. Skipping pgadmin4 installation."
-    fi
-fi
-
 # Create local install lock
 touch bash/.install-lock
 

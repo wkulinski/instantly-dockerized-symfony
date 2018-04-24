@@ -9,7 +9,7 @@ elementIn () {
 
 project_name="${PWD##*/}-app"
 echo "Executing command..."
-scripts=(build cert create deploy export install manage registry)
+scripts=(build cert create deploy export install manage utility)
 if elementIn "$1" "${scripts[@]}"; then
     echo "Executing ./bash/$1.sh"
     eval "./bash/$1.sh ${@:2}"
