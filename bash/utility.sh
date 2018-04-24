@@ -1,11 +1,78 @@
 #!/usr/bin/env bash
 
-set -e
+if [ "$1" == "portainer" ]; then
+    # Install Portainer
+    echo "Portainer installation..."
+    if [ ! "$(docker ps -a | grep portainer/portainer)" ]; then
 
-# https://github.com/docker/docker.github.io/blob/master/registry/deploying.md
-if [ "$1" == "install" ]; then
+        if [ ! -f .env ]; then
+            echo "Creating .env file..."
+            touch .env
+        else
+            echo "Loading .env file..."
+            . .env
+        fi
+
+        if [ -z "$PORTAINER_PORT" ] ; then
+            read -p "Pleas enter portainer port (leave empty to use default 9000): " PORTAINER_PORT
+            if [ -z "$PORTAINER_PORT" ]; then
+                PORTAINER_PORT="9000"
+            fi
+            echo "PORTAINER_PORT=$PORTAINER_PORT" >> .env
+        fi
+
+        ./bash/manage.sh -a reload -c portainer
+
+        echo "Portainer installation finished."
+    else
+        echo "Portainer is already installed. Skipping portainer installation."
+    fi
+elif [ "$1" == "pgadmin4" ]; then
+    # Install pgadmin4
+    echo "Pgadmin4 installation..."
+    if [ ! "$(docker ps -a | grep dpage/pgadmin4)" ]; then
+
+        if [ ! -f .env ]; then
+            echo "Creating .env file..."
+            touch .env
+        else
+            echo "Loading .env file..."
+            . .env
+        fi
+
+        if [ -z "$PGADMIN4_PORT" ] ; then
+            read -p "Pleas enter pgadmin4 port (leave empty to use default 5050): " PGADMIN4_PORT
+            if [ -z "$PGADMIN4_PORT" ]; then
+                PGADMIN4_PORT="5050"
+            fi
+            echo "PGADMIN4_PORT=$PGADMIN4_PORT" >> .env
+        fi
+
+        if [ -z "$PGADMIN_DEFAULT_EMAIL" ]; then
+            while read -p 'Pleas enter your email: ' PGADMIN_DEFAULT_EMAIL && [[ -z "$PGADMIN_DEFAULT_EMAIL" ]] ; do
+                printf "Pleas type some value.\n"
+            done
+            echo "PGADMIN_DEFAULT_EMAIL=$PGADMIN_DEFAULT_EMAIL" >> .env
+        fi
+
+        if [ -z "$PGADMIN_DEFAULT_PASSWORD" ]; then
+            while read -p 'Pleas enter pgadmin4 password: ' PGADMIN_DEFAULT_PASSWORD && [[ -z "$PGADMIN_DEFAULT_PASSWORD" ]] ; do
+                printf "Pleas type some value.\n"
+            done
+            echo "PGADMIN_DEFAULT_PASSWORD=$PGADMIN_DEFAULT_PASSWORD" >> .env
+        fi
+
+        ./bash/manage.sh -a reload -c pgadmin4
+
+        echo "Pgadmin4 installation finished."
+    else
+        echo "Pgadmin4 is already installed. Skipping pgadmin4 installation."
+    fi
+elif [ "$1" == "registry" ]; then
+    # https://github.com/docker/docker.github.io/blob/master/registry/deploying.md
     echo "Docker registry installation..."
     if [ ! "$(docker ps -a | grep -w 'docker-registry-repo')" ]; then
+
         if [ ! -f .env ]; then
             echo "Creating .env file..."
             touch .env
@@ -47,7 +114,7 @@ if [ "$1" == "install" ]; then
         registry_domain="$DOCKER_REGISTRY_PATH:$DOCKER_REGISTRY_PORT"
         if [ ! -f `pwd`"/data/cert/$registry_domain.crt" ] || [ ! -f `pwd`"/data/cert/$registry_domain.key" ]; then
             echo "Missing certificate data/cert/$registry_domain.crt, data/cert/$registry_domain.key..."
-            ./bash/cert.sh -d "$registry_domain"
+            ./bash/cert.sh -n "$registry_domain"
         else
             echo "Certificates ok."
         fi
@@ -61,10 +128,11 @@ if [ "$1" == "install" ]; then
     else
         echo "Docker registry is already installed. Skipping Docker registry installation."
     fi
-elif [ "$1" == "install-ui" ]; then
+elif [ "$1" == "registry-ui" ]; then
     # https://hub.docker.com/r/konradkleine/docker-registry-frontend/
     echo "Docker registry user interface installation..."
     if [ ! "$(docker ps -a | grep docker-registry-ui)" ]; then
+
         if [ ! -f .env ]; then
             echo "Creating .env file..."
             touch .env

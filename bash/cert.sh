@@ -6,15 +6,15 @@ mkdir -p data/cert
 
 echo "Creating new certificate..."
 
-domain=""
+name=""
 while getopts 'd:' flag; do
   case "${flag}" in
-    d) domain="${OPTARG}" ;;
+    n) name="${OPTARG}" ;;
   esac
 done
 
-if [ -z "$domain" ]; then
-    while read -p 'Pleas enter domain (with port if required): ' domain && [[ -z "$domain" ]] ; do
+if [ -z "$name" ]; then
+    while read -p 'Pleas enter certificate name (if use domain as name consider including port number): ' name && [[ -z "$name" ]] ; do
         printf "Pleas type some value.\n"
     done
 fi
@@ -23,13 +23,13 @@ fi
 # https://docs.docker.com/registry/deploying/#native-basic-auth
 docker run -it -v `pwd`/data/cert:/export --name openssl \
     frapsoft/openssl req \
-    -newkey rsa:4096 -nodes -sha256 -keyout "/export/$domain.key" \
-    -x509 -days 365 -out "/export/$domain.crt" \
-    -subj "/C=/ST=/L=/O= Name/OU=Org/CN=$domain" \
+    -newkey rsa:4096 -nodes -sha256 -keyout "/export/$name.key" \
+    -x509 -days 365 -out "/export/$name.crt" \
+    -subj "/C=/ST=/L=/O= Name/OU=Org/CN=$name" \
     -nodes
 
-sudo mkdir -p "/etc/docker/certs.d/$domain"
-sudo cp "data/cert/$domain.crt" "/etc/docker/certs.d/$domain/ca.crt"
+sudo mkdir -p "/etc/docker/certs.d/$name"
+sudo cp "data/cert/$name.crt" "/etc/docker/certs.d/$name/ca.crt"
 
 release="$(lsb_release -is 2>/dev/null)"
 release="${release,,}"
@@ -37,7 +37,7 @@ release="${release,,}"
 echo "Current linux release $release"
 if [ "$release" == "ubuntu" ] ; then
     echo "Coping crt to Ubuntu certificates"
-    sudo cp "data/cert/$domain.crt" "/usr/local/share/ca-certificates/$domain.crt"
+    sudo cp "data/cert/$name.crt" "/usr/local/share/ca-certificates/$name.crt"
     sudo update-ca-certificates
 fi
 
