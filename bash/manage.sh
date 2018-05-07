@@ -22,22 +22,6 @@ if [ "$activity" != "delete" ] ; then
         project_name="$project_name-app"
         echo "Using build docker-compose"
         composer_file="./compose/docker-compose.build.yml"
-    elif [ "$compose" = "pgadmin4" ] ; then
-        project_name="pgadmin4"
-        echo "Using pgadmin4 docker-compose"
-        composer_file="./compose/utility/docker-compose.pgadmin4.yml"
-    elif [ "$compose" = "portainer" ] ; then
-        project_name="portainer"
-        echo "Using portainer docker-compose"
-        composer_file="./compose/utility/docker-compose.portainer.yml"
-    elif [ "$compose" = "registry" ] ; then
-        project_name="registry"
-        echo "Using registry docker-compose"
-        composer_file="./compose/utility/docker-compose.registry.yml"
-    elif [ "$compose" = "registry-ui" ] ; then
-        project_name="registry-ui"
-        echo "Using registry-ui docker-compose"
-        composer_file="./compose/utility/docker-compose.registry-ui.yml"
     else
         project_name="$project_name-app"
         echo "Using dev docker-compose"
