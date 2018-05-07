@@ -26,8 +26,6 @@ docker with all tools helpful in development.
 Create command will:
 - install docker (IF it's not installed yet)
 - install docker-compose (IF it's not installed yet)
-- install portainer (IF it's not installed yet)
-- install pgadmin4 (IF it's not installed yet)
 - create and fill docker .env file (IF you haven't done it manually)
 - compose postgres, nginx and php, and kibana images and create containers
 - store postgres data inside data/postgres/ folder (so you will not loose it by removing container. Keep in mind that this folder MUST be empty otherwise data won't be created.)
@@ -64,8 +62,6 @@ And that's it!
 Create command will:
 - install docker (IF it's not installed yet)
 - install docker-compose (IF it's not installed yet)
-- install portainer (IF it's not installed yet)
-- install pgadmin4 (IF it's not installed yet)
 - create and fill docker .env file (IF you haven't done it manually)
 - compose postgres, nginx and php, and kibana images and create containers
 - store postgres data inside data/postgres/ folder (so you will not loose it by removing container. Keep in mind that this folder MUST be empty otherwise data won't be created.)
