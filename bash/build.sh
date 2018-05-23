@@ -11,28 +11,39 @@ fi
 
 prod=false
 version=""
-fetch=false
+fetch=true
 while getopts 'pv:n' flag; do
     case "${flag}" in
         p) prod=true ;;
         v) version="${OPTARG}" ;;
-        f) fetch=true ;;
+        n) fetch=false ;;
     esac
 done
 
 . .env
 
-if [ -z "$PRIVATE_DOCKER_REGISTRY_PATH" ] ; then
-    while read -p 'Pleas enter registry path: ' PRIVATE_DOCKER_REGISTRY_PATH && [[ -z "$PRIVATE_DOCKER_REGISTRY_PATH" ]] ; do
+if [ -z "$DOCKER_REGISTRY_PATH" ] ; then
+    while read -p 'Pleas enter registry domain/path (ie. localhost): ' DOCKER_REGISTRY_PATH && [[ -z "$DOCKER_REGISTRY_PATH" ]] ; do
         printf "Pleas type some value.\n"
     done
 
     echo "Updating .env file..."
-    echo "PRIVATE_DOCKER_REGISTRY_PATH=$PRIVATE_DOCKER_REGISTRY_PATH" >> .env
+    echo "DOCKER_REGISTRY_PATH=$DOCKER_REGISTRY_PATH" >> .env
     echo ".env file updated."
 fi
 
-echo "Preparing build and push to $PRIVATE_DOCKER_REGISTRY_PATH"
+if [ -z "$DOCKER_REGISTRY_PORT" ] ; then
+    read -p "Pleas enter docker registry port (leave empty to use default 5000): " DOCKER_REGISTRY_PORT
+    if [ -z "$DOCKER_REGISTRY_PORT" ]; then
+        DOCKER_REGISTRY_PORT="5000"
+    fi
+
+    echo "Updating .env file..."
+    echo "DOCKER_REGISTRY_PORT=$DOCKER_REGISTRY_PORT" >> .env
+    echo ".env file updated."
+fi
+
+echo "Preparing build and push to $DOCKER_REGISTRY_PATH:$DOCKER_REGISTRY_PORT"
 
 if [ -z "$version" ] ; then
     if [ "$prod" = false ] ; then
@@ -90,8 +101,8 @@ APPLICATION_VERSION="$version" docker-compose \
     build app
 echo "App image build finished."
 
-echo "Login to $PRIVATE_DOCKER_REGISTRY_PATH registry path."
-docker login "$PRIVATE_DOCKER_REGISTRY_PATH"
+echo "Login to $DOCKER_REGISTRY_PATH:$DOCKER_REGISTRY_PORT registry path."
+docker login "$DOCKER_REGISTRY_PATH:$DOCKER_REGISTRY_PORT"
 
 echo "Pushing to registry..."
 APPLICATION_VERSION="$version" docker-compose \

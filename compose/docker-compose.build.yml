@@ -6,7 +6,7 @@ services:
             context: docker/build
             args:
                 TIMEZONE: ${TIMEZONE}
-        image: ${DOCKER_REGISTRY_PATH}:${DOCKER_REGISTRY_PORT}/app:${APPLICATION_VERSION:-dev}
+        image: ${DOCKER_REGISTRY_PATH}:${DOCKER_REGISTRY_PORT}/symfony-app:${APPLICATION_VERSION:-dev}
         restart: always
         ports:
             - 9001:9000
@@ -18,7 +18,7 @@ services:
             - ./symfony/var/cache:/var/www/symfony/var/cache
     nginx:
         build: docker/nginx
-        image: ${DOCKER_REGISTRY_PATH}:${DOCKER_REGISTRY_PORT}/nginx:${APPLICATION_VERSION:-dev}
+        image: ${DOCKER_REGISTRY_PATH}:${DOCKER_REGISTRY_PORT}/symfony-nginx:${APPLICATION_VERSION:-dev}
         restart: always
         ports:
             - ${SYMFONY_APP_PORT}:80
