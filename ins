@@ -7,6 +7,11 @@ elementIn () {
     return 1
 }
 
+if [ -z "$1" ] ; then
+    echo "No argument supplied"
+    exit 1
+fi
+
 project_name="${PWD##*/}-app"
 echo "Executing command..."
 scripts=(build create deploy export install manage)

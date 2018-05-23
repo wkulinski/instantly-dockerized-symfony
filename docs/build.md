@@ -26,4 +26,4 @@ or you will be asked to pass version number in prompt.
 
 #### Disable fetch and reset do develop/master branch
 You can disable fetching and resetting repository to those branches 
-and use current code "as it is" by using **-f** flag.
+and use current code "as it is" by using **-n** flag.

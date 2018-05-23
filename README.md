@@ -37,7 +37,9 @@ Pleas check project documentation
 * [Frequent problems](docs/problems.md) (Before you waste your time on searching - just look here)
 
 ## You might also want
-If you want make your life easier, and I bet you do, pleas check additional 
-repository with helpful dockerized utilities like Portainer, PgAdmin or Docker registry:  
-[Instantly Dockerized Utilities](https://github.com/wkulinski/instantly-dockerized-utilities)
+If you want make your life easier, and I bet you do, pleas check my others instantly dockerized repositories:
+* [Instantly Dockerized Utilities](https://github.com/wkulinski/instantly-dockerized-utilities) - 
+Repository with helpful dockerized utilities like Portainer, PgAdmin or Docker registry
+* [Instantly Dockerized Angular](https://github.com/wkulinski/instantly-dockerized-angular) - 
+Angular, NativeScript and Docker together :) 
 
